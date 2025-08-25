@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Companies{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Companies</h1>
+  {% for company in companies %}
+    <div><a href="{% url 'companies:detail' company.pk %}">{{ company.name }}</a></div>
+  {% empty %}
+    <p>No companies yet.</p>
+  {% endfor %}
+</section>
+{% endblock %}

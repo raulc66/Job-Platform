@@ -1,0 +1,11 @@
+/* Placeholder UI kit styles. Replace with your own or copy from devsearch if licensed to do so. */
+.container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+.container--narrow { max-width: 760px; }
+.header { background: #0d1321; color: #fff; }
+.header__logo img { height: 36px; }
+.header__menu { list-style: none; display: flex; gap: 1rem; align-items: center; }
+.header__menuItem a { color: #fff; text-decoration: none; }
+.btn { background: #2563eb; color: #fff; padding: 0.5rem 0.9rem; border-radius: 6px; text-decoration: none; }
+.btn--sub { background: #0ea5e9; }
+.alert { border: 1px solid #ddd; padding: 0.75rem 1rem; margin: 1rem; border-radius: 6px; }
+.form p { margin-bottom: .75rem; }

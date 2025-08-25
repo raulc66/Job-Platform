@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Employer Dashboard{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Employer Dashboard</h1>
+  <p>Your jobs and applicants</p>
+  {% for job in jobs %}
+    <div class="card" style="padding:1rem; margin:1rem 0; background:#fff; border-radius:8px">
+      <h3>{{ job.title }}</h3>
+      <p>{{ job.company.name }} • {{ job.get_city_display }}</p>
+      <strong>Applications ({{ job.applications.count }})</strong>
+      <ul>
+        {% for app in job.applications.all %}
+          <li>{{ app.full_name }} — {{ app.email }} ({{ app.get_status_display }})</li>
+        {% empty %}
+          <li>No applications yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% empty %}
+    <p>No jobs yet.</p>
+  {% endfor %}
+</section>
+{% endblock %}

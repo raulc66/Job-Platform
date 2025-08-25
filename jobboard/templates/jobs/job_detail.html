@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ job.title }}{% endblock %}
+{% block content %}
+<section class="container container--narrow">
+  <div class="hero">
+    <h1 class="title">{{ job.title }}</h1>
+    <p class="muted">{{ job.company.name }} • {{ job.get_city_display }}</p>
+    <div class="pills">
+      <span class="pill">{{ job.get_category_display }}</span>
+      {% if job.salary_min %}<span class="pill">RON {{ job.salary_min }}{% if job.salary_max %}–{{ job.salary_max }}{% endif %}</span>{% endif %}
+      {% if job.expires_at %}<span class="pill">Expires {{ job.expires_at|date:"M j, Y" }}</span>{% endif %}
+    </div>
+    <div class="hero__cta">
+      {% if request.user.is_authenticated and request.user.role == 'seeker' %}
+        <a class="btn btn--sub" href="{% url 'applications:apply' slug=job.slug %}">Apply now</a>
+      {% else %}
+        <a class="btn btn--sub" href="{% url 'accounts:login' %}">Login to Apply</a>
+      {% endif %}
+      {% if request.user.is_authenticated and request.user.role == 'employer' and request.user == job.company.owner %}
+        <a class="btn" href="{% url 'jobs:create' %}">Post another job</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <article class="prose">
+    {{ job.description|linebreaks }}
+  </article>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}{{ company.name }}{% endblock %}
+{% block content %}
+<section class="container container--narrow">
+  <h1>{{ company.name }}</h1>
+  <p>{{ company.website }}</p>
+  <p>City: {{ company.city }}</p>
+  <p>Verified: {{ company.is_verified }}</p>
+</section>
+{% endblock %}

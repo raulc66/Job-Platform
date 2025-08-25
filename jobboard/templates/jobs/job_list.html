@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Jobs{% endblock %}
+{% block content %}
+<section class="container">
+  <div class="hero" style="margin-bottom:1rem">
+    <h1 class="title">Find your next role</h1>
+    <p class="muted">Across IT, Logistics, Retail, Support, and Trades</p>
+  </div>
+  <form method="get" class="filters">
+    <input type="text" name="q" placeholder="Keyword" value="{{ request.GET.q }}" />
+    {{ filter.form.category }}
+    {{ filter.form.city }}
+    <button class="btn btn--sub" type="submit">Filter</button>
+  </form>
+
+  <div class="chips" style="display:flex; gap:.5rem; flex-wrap:wrap; margin: .5rem 0 1rem;">
+    {% for key,label in filter.form.category.field.choices %}
+      {% if key %}
+      <a class="pill" href="?category={{ key }}">{{ label }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="grid">
+    {% for job in jobs %}
+      <a class="card" href="{{ job.get_absolute_url }}">
+        <h3>{{ job.title }}</h3>
+        <p class="muted">{{ job.company.name }} • {{ job.get_city_display }}</p>
+        {% if job.salary_min %}<p>From {{ job.salary_min }}{% if job.salary_max %}–{{ job.salary_max }}{% endif %} RON</p>{% endif %}
+      </a>
+    {% empty %}
+      <p>No jobs yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

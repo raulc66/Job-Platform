@@ -1,0 +1,21 @@
+
+{% extends 'base.html' %}
+{% block title %}Locuri de muncă{% endblock %}
+{% block content %}
+<form class="mb-3">
+<input name="q" value="{{ q }}" class="form-control" placeholder="Caută joburi..." />
+</form>
+<div class="list-group">
+{% for job in jobs %}
+<a class="list-group-item list-group-item-action" href="{% url 'jobs:detail' slug=job.slug %}">
+<div class="d-flex w-100 justify-content-between">
+<h5 class="mb-1">{{ job.title }}</h5>
+<small>{{ job.posted_at|date:"d.m.Y" }}</small>
+</div>
+<p class="mb-1">{{ job.company.name }} — {{ job.location }}</p>
+</a>
+{% empty %}
+<p class="text-muted">Nu există anunțuri momentan.</p>
+{% endfor %}
+</div>
+{% endblock %}

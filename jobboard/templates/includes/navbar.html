@@ -1,0 +1,30 @@
+{% load static %}
+<header class="header">
+    <div class="container container--narrow">
+        <a href="{% url 'jobs:list' %}" class="header__logo">
+            <img src="{% static 'images/logo.svg' %}" alt="Jobs" />
+        </a>
+        <nav class="header__nav">
+            <input type="checkbox" id="responsive-menu" />
+            <label for="responsive-menu" class="toggle-menu">
+                <span>Menu</span>
+                <div class="toggle-menu__lines"></div>
+            </label>
+            <ul class="header__menu">
+            <li class="header__menuItem"><a href="{% url 'jobs:list' %}">Jobs</a></li>
+            <li class="header__menuItem"><a href="{% url 'companies:list' %}">Companies</a></li>
+
+                {% if request.user.is_authenticated %}
+                    {% if request.user.role == 'employer' %}
+                    <li class="header__menuItem"><a href="{% url 'jobs:create' %}">Post a Job</a></li>
+                    {% endif %}
+                      <li class="header__menuItem"><a href="{% url 'companies:dashboard' %}">Dashboard</a></li>
+                    <li class="header__menuItem"><a href="{% url 'accounts:logout' %}" class="btn btn--sub">Logout</a></li>
+                {% else %}
+                    <li class="header__menuItem"><a href="{% url 'accounts:login' %}" class="btn btn--sub">Login</a></li>
+                    <li class="header__menuItem"><a href="{% url 'accounts:signup' %}" class="btn">Sign Up</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</header>
