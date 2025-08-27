@@ -4,21 +4,16 @@ from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import path, include
 from apps.jobs.sitemaps import JobSitemap
+from apps.companies.sitemaps import CompanySitemap
 
-sitemaps = {"jobs": JobSitemap}
+sitemaps = {"jobs": JobSitemap, "companies": CompanySitemap}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
-    # Public apps
     path("", include(("apps.jobs.urls", "jobs"), namespace="jobs")),
     path("companies/", include(("apps.companies.urls", "companies"), namespace="companies")),
     path("applications/", include(("apps.applications.urls", "applications"), namespace="applications")),
-
-    # Auth (allauth)
     path("accounts/", include("allauth.urls")),
-
-    # Sitemap
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
 ]
 

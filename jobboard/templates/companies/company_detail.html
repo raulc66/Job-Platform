@@ -1,10 +1,34 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block title %}{{ company.name }}{% endblock %}
+{% block meta_description %}Profil companie {{ company.name }}{% if company.location %}, {{ company.location }}{% endif %}.{% endblock %}
 {% block content %}
-<section class="container container--narrow">
+<section class="container">
   <h1>{{ company.name }}</h1>
-  <p>{{ company.website }}</p>
-  <p>City: {{ company.city }}</p>
-  <p>Verified: {{ company.is_verified }}</p>
+  {% if company.location %}<p class="muted">{{ company.location }}</p>{% endif %}
+  {% if company.description %}
+    <div class="prose mt-2">
+      {{ company.description|linebreaks }}
+    </div>
+  {% endif %}
+  <hr class="my-4" />
+  <h2>Joburi active</h2>
+  {% if jobs %}
+    <ul class="list cards">
+      {% for job in jobs %}
+        <li class="card">
+          <div class="card-body">
+            <h3><a href="{% url 'jobs:detail' slug=job.slug %}">{{ job.title }}</a></h3>
+            <p class="muted">
+              {% if job.company %}{{ job.company.name }} • {% endif %}
+              {{ job.location|default:"" }}
+            </p>
+            <p class="excerpt">{{ job.description|truncatewords:25 }}</p>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nu există joburi publicate de această companie.</p>
+  {% endif %}
 </section>
 {% endblock %}

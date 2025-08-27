@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+
 from apps.companies.models import Company
 
 
@@ -48,7 +49,7 @@ class Job(models.Model):
         return f"{self.title} @ {self.company.name}"
 
     def get_absolute_url(self):
-        return reverse("jobs:detail", args=[self.slug])
+        return reverse("jobs:detail", kwargs={"slug": self.slug})
 
 
 class Application(models.Model):

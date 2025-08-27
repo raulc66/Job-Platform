@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}{{ job.title }}{% endblock %}
+{% block meta_description %}{{ job.title }} la {% if job.company %}{{ job.company.name }}{% endif %}{% if job.location %}, {{ job.location }}{% endif %}.{% endblock %}
+
 {% block content %}
 <section class="container container--narrow">
   <div class="hero">
@@ -30,4 +32,21 @@
     {{ job.description|linebreaks }}
   </article>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@type": "JobPosting",
+    "title": "{{ job.title|escapejs }}",
+    {% if job.company %}"hiringOrganization": {"@type": "Organization", "name": "{{ job.company.name|escapejs }}"},{% endif %}
+    {% if job.created_at %}"datePosted": "{{ job.created_at|date:'c' }}",{% endif %}
+    {% if job.location %}"jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": "{{ job.location|escapejs }}""}},{% endif %}
+    {% if job.employment_type %}"employmentType": "{{ job.employment_type|escapejs }}",{% endif %}
+    {% if job.valid_through %}"validThrough": "{{ job.valid_through|date:'c' }}",{% endif %}
+    "description": "{{ job.description|striptags|truncatechars:300|escapejs }}"
+  }
+  </script>
 {% endblock %}

@@ -11,9 +11,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "django.contrib.sitemaps",  # for sitemap.xml
-    "django.contrib.sites",
-    # 3rd party
+    "django.contrib.sitemaps",
     "django_filters",
     "crispy_forms", "crispy_bootstrap5",
     "allauth", "allauth.account", "allauth.socialaccount",
@@ -92,3 +90,7 @@ ACCOUNT_RATE_LIMITS = {"login_failed": "5/5m"}
 
 # Dev email backend; replace in production
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+
+# Email defaults
+DEFAULT_FROM_EMAIL = "no-reply@localhost"
+ADMINS = [("Admin", "admin@example.com")]  # schimbați cu emailul vostru

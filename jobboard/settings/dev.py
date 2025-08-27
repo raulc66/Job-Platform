@@ -23,4 +23,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Additional development settings can be added here
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email to console in dev
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
