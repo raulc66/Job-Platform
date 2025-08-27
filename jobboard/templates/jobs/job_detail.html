@@ -12,7 +12,11 @@
     </div>
     <div class="hero__cta">
       {% if request.user.is_authenticated and request.user.role == 'seeker' %}
-        <a class="btn btn--sub" href="{% url 'applications:apply' slug=job.slug %}">Apply now</a>
+        {% if job %}
+          <a class="btn btn-primary" href="{% url 'applications:apply' slug=job.slug %}">Aplică acum</a>
+        {% elif object %}
+          <a class="btn btn-primary" href="{% url 'applications:apply' slug=object.slug %}">Aplică acum</a>
+        {% endif %}
       {% else %}
         <a class="btn btn--sub" href="{% url 'accounts:login' %}">Login to Apply</a>
       {% endif %}

@@ -1,0 +1,24 @@
+```html
+// filepath: /home/user/Desktop/Programming/Coding/Proj/Jobs Platform/jobboard/apps/companies/templates/companies/company_form.html
+{% extends "base.html" %}
+{% block title %}Companie{% endblock %}
+{% block content %}
+<section class="container narrow">
+  <h1>Companie</h1>
+  <form method="post" enctype="multipart/form-data" class="form-card">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small class="muted">{{ field.help_text }}</small>{% endif %}
+        {% for e in field.errors %}<div class="error">{{ e }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Salvează</button>
+    <a href="{% url 'companies:list' %}" class="btn btn-ghost">Renunță</a>
+  </form>
+</section>
+{% endblock %}
+```

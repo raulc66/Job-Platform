@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Aplică – {{ job.title }}{% endblock %}
+{% block content %}
+<section class="container narrow">
+  <h1>Aplică la: {{ job.title }}</h1>
+  <p class="muted">
+    {% if job.company %}{{ job.company.name }} • {% endif %}
+    {{ job.location|default:"" }}
+  </p>
+  <form method="post" enctype="multipart/form-data" class="form-card">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="{{ form.cover_letter.id_for_label }}">{{ form.cover_letter.label }}</label>
+      {{ form.cover_letter }}
+    </div>
+    <div class="form-group">
+      <label for="{{ form.cv.id_for_label }}">{{ form.cv.label }}</label>
+      {{ form.cv }}
+    </div>
+    <button type="submit" class="btn btn-primary">Trimite aplicația</button>
+    <a href="{% url 'jobs:detail' slug=job.slug %}" class="btn btn-ghost">Înapoi</a>
+  </form>
+</section>
+{% endblock %}

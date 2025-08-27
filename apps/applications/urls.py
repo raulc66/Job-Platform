@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import ApplyView
+from . import views
 
 app_name = "applications"
 
 urlpatterns = [
-    path("apply/<slug:slug>/", ApplyView.as_view(), name="apply"),
+    path("apply/<slug:slug>/", views.apply, name="apply"),
+    path("mine/", views.my_applications, name="mine"),
 ]

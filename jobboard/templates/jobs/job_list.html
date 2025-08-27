@@ -1,36 +1,74 @@
-{% extends 'base.html' %}
-{% block title %}Jobs{% endblock %}
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Joburi{% endblock %}
 {% block content %}
 <section class="container">
-  <div class="hero" style="margin-bottom:1rem">
-    <h1 class="title">Find your next role</h1>
-    <p class="muted">Across IT, Logistics, Retail, Support, and Trades</p>
+  <div class="hero">
+    <h1>Găsește următorul tău rol</h1>
+    <p class="muted">IT, Logistică, Retail, Support și alte domenii</p>
   </div>
-  <form method="get" class="filters">
-    <input type="text" name="q" placeholder="Keyword" value="{{ request.GET.q }}" />
-    {{ filter.form.category }}
-    {{ filter.form.city }}
-    <button class="btn btn--sub" type="submit">Filter</button>
+
+  <form method="get" class="filter-bar">
+    <div class="filter-row">
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Cuvinte cheie" />
+      <input type="text" name="location" value="{{ request.GET.location }}" placeholder="Locație" />
+      {% if filter.form.work_type %}
+        {{ filter.form.work_type }}
+      {% endif %}
+      {% if filter.form.employment_type %}
+        {{ filter.form.employment_type }}
+      {% endif %}
+      <label class="checkbox">
+        <input type="checkbox" name="has_salary" value="true" {% if request.GET.has_salary %}checked{% endif %}/> Are salariu
+      </label>
+      <select name="sort">
+        <option value="newest" {% if sort == "newest" %}selected{% endif %}>Cele mai noi</option>
+        <option value="salary_desc" {% if sort == "salary_desc" %}selected{% endif %}>Salariu mare → mic</option>
+      </select>
+      <button class="btn btn-primary" type="submit">Filtrează</button>
+    </div>
   </form>
 
-  <div class="chips" style="display:flex; gap:.5rem; flex-wrap:wrap; margin: .5rem 0 1rem;">
-    {% for key,label in filter.form.category.field.choices %}
-      {% if key %}
-      <a class="pill" href="?category={{ key }}">{{ label }}</a>
-      {% endif %}
-    {% endfor %}
-  </div>
+  {% if page_obj.object_list %}
+    <ul class="list cards">
+      {% for job in page_obj.object_list %}
+        <li class="card">
+          <div class="card-body">
+            <h3><a href="{% url 'jobs:detail' slug=job.slug %}">{{ job.title }}</a></h3>
+            <p class="muted">
+              {% if job.company %}{{ job.company.name }} • {% endif %}
+              {{ job.location|default:"" }}
+            </p>
+            <div class="badges">
+              {% if job.work_type %}
+                <span class="pill">{{ job.work_type|capfirst }}</span>
+              {% endif %}
+              {% if job.employment_type %}
+                <span class="pill">{{ job.employment_type|capfirst }}</span>
+              {% endif %}
+              {% if job.salary_min or job.salary_max %}
+                <span class="pill pill--subtle">
+                  {% if job.salary_min %}{{ job.salary_min }}{% endif %}{% if job.salary_min and job.salary_max %}–{% endif %}{% if job.salary_max %}{{ job.salary_max }}{% endif %} RON
+                </span>
+              {% endif %}
+            </div>
+            <p class="excerpt">{{ job.description|truncatewords:30 }}</p>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
 
-  <div class="grid">
-    {% for job in jobs %}
-      <a class="card" href="{{ job.get_absolute_url }}">
-        <h3>{{ job.title }}</h3>
-        <p class="muted">{{ job.company.name }} • {{ job.get_city_display }}</p>
-        {% if job.salary_min %}<p>From {{ job.salary_min }}{% if job.salary_max %}–{{ job.salary_max }}{% endif %} RON</p>{% endif %}
-      </a>
-    {% empty %}
-      <p>No jobs yet.</p>
-    {% endfor %}
-  </div>
+    <nav class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?{% if preserved_query %}{{ preserved_query }}&{% endif %}page={{ page_obj.previous_page_number }}">« Înapoi</a>
+      {% endif %}
+      <span>Pagina {{ page_obj.number }} din {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?{% if preserved_query %}{{ preserved_query }}&{% endif %}page={{ page_obj.next_page_number }}">Înainte »</a>
+      {% endif %}
+    </nav>
+  {% else %}
+    <p>Momentan nu există joburi care să corespundă filtrului.</p>
+  {% endif %}
 </section>
 {% endblock %}

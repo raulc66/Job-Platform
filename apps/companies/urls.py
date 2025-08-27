@@ -1,10 +1,11 @@
 from django.urls import path
-from .views import EmployerDashboardView, company_list, company_detail
+from . import views
 
 app_name = "companies"
 
 urlpatterns = [
-    path("dashboard/", EmployerDashboardView.as_view(), name="dashboard"),
-    path("", company_list, name="list"),
-    path("<int:pk>/", company_detail, name="detail"),
+    path("", views.company_list, name="list"),
+    path("<slug:slug>/", views.company_detail, name="detail"),
+    path("employer/need-company/", views.need_company, name="need_company"),
+    path("employer/applicants/", views.employer_applicants, name="employer_applicants"),
 ]

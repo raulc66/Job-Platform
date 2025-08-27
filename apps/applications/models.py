@@ -4,25 +4,26 @@ from apps.jobs.models import Job
 
 
 class Application(models.Model):
-    class Status(models.TextChoices):
-        NEW = "new", "New"
-        REVIEWED = "reviewed", "Reviewed"
-        SHORTLISTED = "shortlisted", "Shortlisted"
-        REJECTED = "rejected", "Rejected"
+    STATUS_CHOICES = [
+        ("submitted", "Trimisă"),
+        ("viewed", "Vizualizată"),
+        ("interview", "Interviu"),
+        ("offer", "Ofertă"),
+        ("rejected", "Respinsă"),
+    ]
 
-    job = models.ForeignKey(Job, related_name="applications", on_delete=models.CASCADE)
-    applicant = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="applications", on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=255)
-    email = models.EmailField()
-    phone = models.CharField(max_length=32, blank=True)
-    cv = models.FileField(upload_to="cvs/", blank=True, null=True)
-    cover_letter = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
-    created_at = models.DateTimeField(auto_now_add=True)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applications", verbose_name="Job")
+    seeker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="applications", verbose_name="Candidat")
+    cover_letter = models.TextField(blank=True, null=True, verbose_name="Scrisoare de intenție")
+    cv = models.FileField(upload_to="cvs/%Y/%m/", blank=True, null=True, verbose_name="CV")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="submitted", verbose_name="Stare")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Creat la")
 
     class Meta:
-        unique_together = ("job", "applicant")
+        unique_together = (("job", "seeker"),)
         ordering = ["-created_at"]
+        verbose_name = "Aplicație"
+        verbose_name_plural = "Aplicații"
 
     def __str__(self):
-        return f"{self.full_name} -> {self.job.title}"
+        return f"{self.seeker} → {self.job}"

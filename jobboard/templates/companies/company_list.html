@@ -1,12 +1,21 @@
-{% extends 'base.html' %}
-{% block title %}Companies{% endblock %}
+{% extends "base.html" %}
+{% block title %}Companii{% endblock %}
 {% block content %}
 <section class="container">
-  <h1>Companies</h1>
-  {% for company in companies %}
-    <div><a href="{% url 'companies:detail' company.pk %}">{{ company.name }}</a></div>
-  {% empty %}
-    <p>No companies yet.</p>
-  {% endfor %}
+  <h1>Companii</h1>
+  {% if companies %}
+    <ul class="list cards">
+      {% for c in companies %}
+        <li class="card">
+          <div class="card-body">
+            <h3><a href="{% url 'companies:detail' slug=c.slug %}">{{ c.name }}</a></h3>
+            {% if c.location %}<p class="muted">{{ c.location }}</p>{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nu există companii de afișat.</p>
+  {% endif %}
 </section>
 {% endblock %}

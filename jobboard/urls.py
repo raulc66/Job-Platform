@@ -9,12 +9,17 @@ sitemaps = {"jobs": JobSitemap}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+
+    # Public apps
     path("", include(("apps.jobs.urls", "jobs"), namespace="jobs")),
-    path("accounts/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),
-    path("accounts/", include("allauth.urls")),
     path("companies/", include(("apps.companies.urls", "companies"), namespace="companies")),
     path("applications/", include(("apps.applications.urls", "applications"), namespace="applications")),
-    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
+
+    # Auth (allauth)
+    path("accounts/", include("allauth.urls")),
+
+    # Sitemap
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
 ]
 
 if settings.DEBUG:

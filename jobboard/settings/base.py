@@ -14,7 +14,8 @@ INSTALLED_APPS = [
     "django.contrib.sitemaps",  # for sitemap.xml
     "django.contrib.sites",
     # 3rd party
-    "django_filters", "crispy_forms", "crispy_bootstrap5",
+    "django_filters",
+    "crispy_forms", "crispy_bootstrap5",
     "allauth", "allauth.account", "allauth.socialaccount",
     # Local apps
     "apps.accounts.apps.AccountsConfig",
@@ -57,6 +58,11 @@ LANGUAGE_CODE = "ro"
 TIME_ZONE = "Europe/Bucharest"
 USE_I18N = True
 USE_TZ = True
+
+# Optional: translations directory if you localize further later
+# from pathlib import Path
+# BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# LOCALE_PATHS = [BASE_DIR / "locale"]
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "jobboard" / "static"]

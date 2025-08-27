@@ -1,45 +1,39 @@
 from django import forms
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
-from django.views.generic import FormView
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+from apps.accounts.decorators import role_required
 from apps.jobs.models import Job
 from .models import Application
-from apps.accounts.decorators import SeekerRequiredMixin
+from .forms import ApplicationForm  # use the correct form
 
 
-class ApplicationForm(forms.ModelForm):
-    class Meta:
-        model = Application
-        fields = ["full_name", "email", "phone", "cv", "cover_letter"]
+@login_required
+@role_required("seeker")
+def apply(request, slug):
+    job = get_object_or_404(Job, slug=slug)
+    existing = Application.objects.filter(job=job, seeker=request.user).first()
+    if existing:
+        messages.info(request, "Ai aplicat deja la acest job.")
+        return redirect("jobs:detail", slug=job.slug)
 
-    def __init__(self, *args, **kwargs):
-        self.job = kwargs.pop("job", None)
-        self.applicant = kwargs.pop("applicant", None)
-        super().__init__(*args, **kwargs)
+    if request.method == "POST":
+        form = ApplicationForm(request.POST, request.FILES)
+        if form.is_valid():
+            app = form.save(commit=False)
+            app.job = job
+            app.seeker = request.user
+            app.save()
+            messages.success(request, "Aplicația a fost trimisă.")
+            return redirect("jobs:detail", slug=job.slug)
+    else:
+        form = ApplicationForm()
 
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        obj.job = self.job
-        obj.applicant = self.applicant
-        if commit:
-            obj.save()
-        return obj
+    return render(request, "applications/apply.html", {"job": job, "form": form})
 
 
-class ApplyView(SeekerRequiredMixin, FormView):
-    form_class = ApplicationForm
-    template_name = "applications/application_form.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        self.job = get_object_or_404(Job, slug=kwargs["slug"], is_active=True)
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["job"] = self.job
-        kwargs["applicant"] = self.request.user
-        return kwargs
-
-    def get_success_url(self):
-        return reverse_lazy("jobs:detail", kwargs={"slug": self.job.slug})
+@login_required
+@role_required("seeker")
+def my_applications(request):
+    qs = Application.objects.filter(seeker=request.user).select_related("job", "job__company")
+    return render(request, "applications/my_applications.html", {"applications": qs})
