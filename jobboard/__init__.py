@@ -1,1 +1,1 @@
-# This file is intentionally left blank.
+from .celery import app as celery_app  # noqa: F401

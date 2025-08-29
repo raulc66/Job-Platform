@@ -1,0 +1,10 @@
+Bună {{ user.username }},
+
+Iată un rezumat {{ frequency }} al joburilor tale salvate:
+
+{% for s in saved %}
+- {{ s.job.title }}{% if s.job.company %} la {{ s.job.company.name }}{% endif %}
+{% endfor %}
+
+Succes!
+Echipa JobBoard

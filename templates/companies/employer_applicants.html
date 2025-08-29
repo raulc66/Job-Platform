@@ -4,33 +4,39 @@
 <section class="container">
   <h1>Candidaturi primite</h1>
   {% if applications %}
-    <div class="table-responsive card">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Job</th>
-            <th>Companie</th>
-            <th>Candidat</th>
-            <th>Stare</th>
-            <th>Data</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in applications %}
-            <tr>
-              <td><a href="{% url 'jobs:detail' slug=a.job.slug %}">{{ a.job.title }}</a></td>
-              <td>{{ a.job.company.name }}</td>
-              <td>
-                {% if a.seeker.get_full_name %}{{ a.seeker.get_full_name }}{% else %}{{ a.seeker.username }}{% endif %}
-                {% if a.seeker.email %}<br><span class="muted small">{{ a.seeker.email }}</span>{% endif %}
-              </td>
-              <td><span class="pill">{{ a.get_status_display }}</span></td>
-              <td>{{ a.created_at|date:"Y-m-d H:i" }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <ul class="list">
+      {% for a in applications %}
+        <li class="card">
+          <div class="card-body">
+            <h3>{{ a.job.title }} — {{ a.seeker.username }}</h3>
+            {% if a.status %}
+              <form method="post" class="inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="app_id" value="{{ a.id }}" />
+                <select name="status">
+                  {% for s,v in a._meta.get_field('status').choices %}
+                    <option value="{{ s }}" {% if a.status == s %}selected{% endif %}>{{ v }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn--sub" type="submit">Actualizează</button>
+              </form>
+            {% endif %}
+
+            {% if a.cover_letter %}<p class="mt-2"><strong>Mesaj:</strong> {{ a.cover_letter|linebreaks }}</p>{% endif %}
+            {% if a.answers.all %}
+              <div class="mt-2">
+                <strong>Răspunsuri screening:</strong>
+                <ul class="list">
+                  {% for ans in a.answers.all %}
+                    <li>{{ ans.question.text }} — <em>{{ ans.answer_text }}</em></li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
   {% else %}
     <p>Nu există candidaturi încă.</p>
   {% endif %}

@@ -27,3 +27,17 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.seeker} → {self.job}"
+
+
+class ApplicationAnswer(models.Model):
+    application = models.ForeignKey("applications.Application", related_name="answers", on_delete=models.CASCADE)
+    question = models.ForeignKey("jobs.JobQuestion", related_name="answers", on_delete=models.CASCADE)
+    answer_text = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("application", "question")
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"A{self.application_id}:Q{self.question_id}"

@@ -6,7 +6,9 @@ from django.contrib import messages
 from apps.accounts.decorators import EmployerRequiredMixin, role_required
 from apps.jobs.models import Job
 from apps.applications.models import Application
+from apps.applications.models import ApplicationAnswer
 from .models import Company
+from apps.analytics.utils import log_event
 
 
 class EmployerDashboardView(EmployerRequiredMixin, TemplateView):
@@ -48,12 +50,29 @@ def need_company(request):
 @login_required
 @role_required("employer")
 def employer_applicants(request):
-    # Applications for jobs owned by the employer's companies
-    company_ids = Company.objects.filter(owner=request.user).values_list("id", flat=True)
+    # Employer must own at least one company
+    companies = Company.objects.filter(owner=request.user)
+    jobs = Job.objects.filter(company__in=companies)
     apps_qs = (
-        Application.objects
-        .filter(job__company_id__in=list(company_ids))
+        Application.objects.filter(job__in=jobs)
         .select_related("job", "job__company", "seeker")
-        .order_by("-created_at")
+        .prefetch_related(Prefetch("answers", queryset=ApplicationAnswer.objects.select_related("question")))
+        .order_by("-id")
     )
+
+    # Handle status update (if Application has status field)
+    if request.method == "POST":
+        app_id = request.POST.get("app_id")
+        new_status = request.POST.get("status")
+        app = apps_qs.filter(id=app_id).first()
+        if app and hasattr(app, "status") and new_status:
+            app.status = new_status
+            app.save(update_fields=["status"])
+            try:
+                log_event(request, "status_changed", {"application_id": app.id, "status": new_status})
+            except Exception:
+                pass
+            messages.success(request, "Status actualizat.")
+            return redirect("companies:employer_applicants")
+
     return render(request, "companies/employer_applicants.html", {"applications": apps_qs})

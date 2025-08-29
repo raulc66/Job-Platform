@@ -1,0 +1,16 @@
+{% if questions %}
+  <hr />
+  <h3>Întrebări de screening</h3>
+  {% for q in questions %}
+    <div class="form-group">
+      <label>{{ q.text }} {% if q.required %}<span class="muted">(obligatoriu)</span>{% endif %}</label>
+      {% if q.type == "yes_no" %}
+        <label class="checkbox"><input type="checkbox" name="q_{{ q.id }}" {% if q.required %}aria-required="true"{% endif %}> Da</label>
+      {% elif q.type == "number" %}
+        <input type="number" name="q_{{ q.id }}" class="input" {% if q.required %}aria-required="true"{% endif %}>
+      {% else %}
+        <input type="text" name="q_{{ q.id }}" class="input" {% if q.required %}aria-required="true"{% endif %}>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endif %}

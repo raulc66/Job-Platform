@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "apps.companies.apps.CompaniesConfig",
     "apps.jobs.apps.JobsConfig",
     "apps.applications.apps.ApplicationsConfig",
+    "apps.analytics",
 ]
 
 MIDDLEWARE = [
@@ -31,6 +32,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "jobboard.middleware.RequestIDMiddleware",
 ]
 
 ROOT_URLCONF = "jobboard.urls"
@@ -94,3 +96,54 @@ EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.Em
 # Email defaults
 DEFAULT_FROM_EMAIL = "no-reply@localhost"
 ADMINS = [("Admin", "admin@example.com")]  # schimbați cu emailul vostru
+
+# Structured logging with request IDs
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_id": {
+            "()": "jobboard.logging_filters.RequestIDFilter",
+        }
+    },
+    "formatters": {
+        "kv": {
+            "format": "level=%(levelname)s logger=%(name)s request_id=%(request_id)s msg=%(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "filters": ["request_id"],
+            "formatter": "kv",
+        },
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO"},
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "analytics": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
+
+# Sentry (optional). Set SENTRY_DSN in environment to enable.
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=float(os.environ.get("SENTRY_TRACES", "0.1")),
+            send_default_pii=False,
+        )
+    except Exception:
+        pass
+
+# Celery (Redis broker) basic settings
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE

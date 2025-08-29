@@ -1,11 +1,14 @@
 from django.conf import settings
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView as DjangoLoginView, LogoutView as DjangoLogoutView
-from django.shortcuts import redirect
+from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import FormView
+from django.contrib import messages
 
-from .forms import LoginForm, SignupForm
+from .forms import LoginForm, SignupForm, SeekerProfileForm
+from .models import SeekerProfile
 
 
 class LoginView(DjangoLoginView):
@@ -30,3 +33,17 @@ class SignupView(FormView):
             backend="allauth.account.auth_backends.AuthenticationBackend",
         )
         return redirect(self.get_success_url())
+
+
+@login_required
+def quick_profile(request):
+    profile, _ = SeekerProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = SeekerProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profil salvat.")
+            return redirect("applications:mine")
+    else:
+        form = SeekerProfileForm(instance=profile)
+    return render(request, "accounts/quick_profile.html", {"form": form})
