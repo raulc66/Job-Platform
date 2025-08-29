@@ -4,11 +4,11 @@
 <section class="container">
   <h1>Companii</h1>
   {% if companies %}
-    <ul class="list cards">
+    <ul class="list cards" role="list">
       {% for c in companies %}
-        <li class="card">
+        <li class="card" role="listitem">
           <div class="card-body">
-            <h3><a href="{% url 'companies:detail' slug=c.slug %}">{{ c.name }}</a></h3>
+            <h3><a href="{% url 'companies:detail' slug=c.slug %}" aria-label="Deschide profil {{ c.name }}">{{ c.name }}</a></h3>
             {% if c.location %}<p class="muted">{{ c.location }}</p>{% endif %}
           </div>
         </li>

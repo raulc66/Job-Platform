@@ -8,8 +8,18 @@ from django_filters.views import FilterView
 from apps.accounts.decorators import EmployerRequiredMixin, role_required
 from apps.companies.models import Company
 from .forms import JobForm
-from .models import Job
+from .models import Job, SavedJob, JobReport
 from .filters import JobFilter
+from django.utils import timezone
+from datetime import timedelta
+from django.utils.decorators import method_decorator
+from apps.accounts.decorators import rate_limit
+import re
+from django.core.mail import send_mail
+from django.conf import settings
+from apps.analytics.utils import log_event
+
+PROFANITY_WORDS = {"fuck", "shit", "spam", "escroc", "teapa", "teapă"}
 
 class JobListView(FilterView, ListView):
     model = Job
@@ -23,19 +33,92 @@ class JobListView(FilterView, ListView):
 
 class JobDetailView(DetailView):
     model = Job
+    template_name = "jobs/job_detail.html"
     slug_field = "slug"
     slug_url_kwarg = "slug"
-    template_name = "jobs/job_detail.html"
-    context_object_name = "job"
 
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        try:
+            log_event(request, "job_view", {"job_id": self.object.id, "slug": self.object.slug})
+        except Exception:
+            pass
+        return response
+
+@method_decorator(rate_limit(key="job-create", rate=5, period=60), name="dispatch")  # 5/min per user/IP
 class JobCreateView(EmployerRequiredMixin, CreateView):
     model = Job
     form_class = JobForm
     template_name = "jobs/job_form.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        # Require at least one company owned by the employer
+        if not Company.objects.filter(owner=request.user).exists():
+            messages.warning(request, "Trebuie să adaugi o companie înainte de a posta un job.")
+            return redirect("companies:need_company")
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        return super().form_valid(form)
+
+        # Duplicate detection in last 7 days (same company + title + location/city if present)
+        fields = {f.name for f in Job._meta.get_fields()}
+        company = form.cleaned_data.get("company")
+        title = (form.cleaned_data.get("title") or "").strip()
+        location = (form.cleaned_data.get("location") or "").strip() if "location" in fields else ""
+        city = (form.cleaned_data.get("city") or "").strip() if "city" in fields else ""
+        since = timezone.now() - timedelta(days=7)
+
+        dup_qs = Job.objects.filter(company=company, title__iexact=title, created_at__gte=since)
+        if "location" in fields and location:
+            dup_qs = dup_qs.filter(location__iexact=location)
+        elif "city" in fields and city:
+            dup_qs = dup_qs.filter(city__iexact=city)
+
+        # Abuse detection: simple profanity + contact leakage already redacted in form, still flag if obvious
+        desc = (form.cleaned_data.get("description") or "").lower()
+        has_profanity = any(w in desc for w in PROFANITY_WORDS)
+        has_contact_leak = bool(re.search(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", desc, re.I)) or bool(re.search(r"\+?\d[\d\s().-]{6,}\d", desc))
+
+        # Moderation rule: first 5 approved jobs by this employer require approval
+        approved_count = Job.objects.filter(created_by=self.request.user, moderation_status=Job.MOD_APPROVED).count()
+        requires_review = approved_count < 5
+
+        flagged_reason = ""
+        if dup_qs.exists():
+            requires_review = True
+            flagged_reason = "duplicate"
+        elif has_profanity:
+            requires_review = True
+            flagged_reason = "abuse"
+        elif has_contact_leak:
+            requires_review = True
+            flagged_reason = "contact_info"
+
+        if requires_review:
+            form.instance.moderation_status = Job.MOD_PENDING
+            if "is_active" in fields:
+                form.instance.is_active = False
+            if flagged_reason:
+                form.instance.flagged_reason = flagged_reason
+                form.instance.flagged_at = timezone.now()
+        else:
+            form.instance.moderation_status = Job.MOD_APPROVED
+            form.instance.approved_at = timezone.now()
+            if "is_active" in fields:
+                form.instance.is_active = True
+
+        # Enforce ownership of company (already done above)
+        company = form.cleaned_data.get("company")
+        if company and getattr(company, "owner_id", None) != self.request.user.id:
+            return HttpResponseForbidden("Nu ai permisiunea de a posta pentru această companie.")
+
+        response = super().form_valid(form)
+        try:
+            log_event(self.request, "job_posted", {"job_id": self.object.id, "slug": self.object.slug})
+        except Exception:
+            pass
+        return response
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -139,3 +222,40 @@ def job_detail(request, slug):
     else:
         job = get_object_or_404(qs, slug=slug)
     return render(request, "jobs/job_detail.html", {"job": job})
+
+@login_required
+@role_required("seeker")
+def save_job(request, slug):
+    job = get_object_or_404(Job, slug=slug)
+    SavedJob.objects.get_or_create(user=request.user, job=job)
+    messages.success(request, "Job salvat.")
+    return redirect("jobs:detail", slug=slug)
+
+@login_required
+@role_required("seeker")
+def unsave_job(request, slug):
+    job = get_object_or_404(Job, slug=slug)
+    SavedJob.objects.filter(user=request.user, job=job).delete()
+    messages.info(request, "Job eliminat din favorite.")
+    return redirect("jobs:detail", slug=slug)
+
+@login_required
+def report_job(request, slug):
+    job = get_object_or_404(Job, slug=slug)
+    if request.method == "POST":
+        reason = request.POST.get("reason", "other")
+        notes = request.POST.get("notes", "").strip()
+        JobReport.objects.create(job=job, reporter=request.user, reason=reason, notes=notes)
+
+        # Notify staff/admins (console backend in dev)
+        recipients = [email for _, email in getattr(settings, "ADMINS", [])] or [getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@localhost")]
+        subject = f"[Report job] {job.title}"
+        body = f"Job: {job.title}\nCompanie: {getattr(job.company, 'name', '')}\nReporter: {request.user.username}\nMotiv: {reason}\nDetalii: {notes}\nURL: {request.build_absolute_uri(job.get_absolute_url())}"
+        try:
+            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, recipients, fail_silently=True)
+        except Exception:
+            pass
+
+        messages.success(request, "Mulțumim pentru raportare. Echipa va verifica anunțul.")
+        return redirect("jobs:detail", slug=slug)
+    return redirect("jobs:detail", slug=slug)

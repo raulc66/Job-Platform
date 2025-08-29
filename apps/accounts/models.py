@@ -25,3 +25,14 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile({self.user.username})"
+
+
+class SeekerProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="seeker_profile", on_delete=models.CASCADE)
+    full_name = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    location = models.CharField(max_length=120, blank=True)
+    skills = models.TextField(blank=True, help_text="Listă scurtă, separată prin virgule")
+
+    def __str__(self):
+        return f"Profil: {self.user}"

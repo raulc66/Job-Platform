@@ -4,23 +4,32 @@
 <section class="container">
   <h1>Aplicațiile mele</h1>
   {% if applications %}
-    <ul class="list cards">
+    <ul class="list">
       {% for a in applications %}
-        <li class="card">
-          <div class="card-body">
-            <h3><a href="{% url 'jobs:detail' slug=a.job.slug %}">{{ a.job.title }}</a></h3>
-            <p class="muted">
-              {% if a.job.company %}{{ a.job.company.name }} • {% endif %}
-              {{ a.job.location|default:"" }}
-            </p>
-            <p class="status pill">{{ a.get_status_display }}</p>
-            <p class="muted small">Trimis: {{ a.created_at|date:"Y-m-d H:i" }}</p>
-          </div>
+        <li>
+          <a href="{% url 'jobs:detail' slug=a.job.slug %}">{{ a.job.title }}</a>
+          {% if a.status %}<span class="pill">{{ a.status }}</span>{% endif %}
+          <div class="muted">{% if a.job.company %}{{ a.job.company.name }}{% endif %}</div>
         </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p>Nu ai aplicații încă.</p>
+    <p>Nu ai aplicat încă.</p>
+  {% endif %}
+
+  <hr />
+  <h2>Joburi salvate</h2>
+  {% if saved_jobs %}
+    <ul class="list">
+      {% for s in saved_jobs %}
+        <li>
+          <a href="{% url 'jobs:detail' slug=s.job.slug %}">{{ s.job.title }}</a>
+          <span class="muted">{% if s.job.company %}{{ s.job.company.name }}{% endif %}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nu ai joburi salvate.</p>
   {% endif %}
 </section>
 {% endblock %}
