@@ -1,33 +1,22 @@
-{% load static %}
-<header class="header">
-  <div class="container container--narrow">
-    <a href="{% url 'jobs:list' %}" class="header__logo">
-      <img src="{% static 'images/logo.svg' %}" alt="Jobs" />
-    </a>
-    <nav class="header__nav">
-      <input type="checkbox" id="responsive-menu" />
-      <label for="responsive-menu" class="toggle-menu">
-        <span>Menu</span>
-        <div class="toggle-menu__lines"></div>
-      </label>
-      <ul class="header__menu">
-        <li class="header__menuItem"><a href="{% url 'jobs:list' %}">Joburi</a></li>
-        <li class="header__menuItem"><a href="{% url 'companies:list' %}">Companii</a></li>
+{% load static %}{% url 'account_logout' as logout_url %}{% url 'account_login' as login_url %}{% url 'account_signup' as signup_url %}
 
-        {% if request.user.is_authenticated and request.user.role == 'employer' %}
-          <li class="header__menuItem"><a href="{% url 'companies:employer_applicants' %}">Candidaturi primite</a></li>
+<header class="site-header">
+  <div class="nav-container">
+    <a class="brand" href="{% url 'home' %}">JobBoard</a>
+    <nav class="top-nav" aria-label="Principal">
+      {% if request.user.is_authenticated %}
+        {% if request.user.role == 'employer' %}
+          <a href="{% url 'jobs:create' %}">Postează job</a>
+          <a href="{% url 'companies:employer_applicants' %}">Candidați</a>
+        {% elif request.user.role == 'seeker' %}
+          <a href="{% url 'applications:mine' %}">Aplicațiile mele</a>
+          <a href="{% url 'applications:mine' %}#saved">Salvate</a>
         {% endif %}
-        {% if request.user.is_authenticated and request.user.role == 'seeker' %}
-          <li class="header__menuItem"><a href="{% url 'applications:mine' %}">Aplicațiile mele</a></li>
-        {% endif %}
-
-        {% if request.user.is_authenticated %}
-          <li class="header__menuItem"><a href="{% url 'account_logout' %}" class="btn btn--sub">Deconectare</a></li>
-        {% else %}
-          <li class="header__menuItem"><a href="{% url 'account_login' %}" class="btn btn--sub">Autentificare</a></li>
-          <li class="header__menuItem"><a href="{% url 'account_signup' %}" class="btn">Înregistrare</a></li>
-        {% endif %}
-      </ul>
+        {% if logout_url %}<a href="{{ logout_url }}">Logout</a>{% endif %}
+      {% else %}
+        <a href="{{ login_url|default:'#' }}">Login</a>
+        <a href="{{ signup_url|default:'#' }}">Înregistrare</a>
+      {% endif %}
     </nav>
   </div>
 </header>

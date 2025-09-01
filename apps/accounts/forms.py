@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from .models import SeekerProfile
 
 User = get_user_model()
 
@@ -11,14 +12,11 @@ class LoginForm(AuthenticationForm):
 
 
 class SignupForm(UserCreationForm):
-    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={"class": "form-control"}))
-    first_name = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control"}))
-    last_name = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control"}))
-    phone = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control"}))
+    email = forms.EmailField(required=False)
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("username", "email", "first_name", "last_name", "phone")
+        fields = ("username", "email")
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
@@ -36,3 +34,14 @@ class SignupForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class SeekerProfileForm(forms.ModelForm):
+    class Meta:
+        model = SeekerProfile
+        fields = ["location", "skills", "portfolio_url"]  # CV optional handled separately if you add a FileField
+        labels = {
+            "location": "Locație",
+            "skills": "Aptitudini (maxim 3 recomandat, separate prin virgule)",
+            "portfolio_url": "Link portofoliu (opțional)",
+        }

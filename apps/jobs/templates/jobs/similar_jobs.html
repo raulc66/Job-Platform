@@ -1,0 +1,27 @@
+
+{% if jobs %}
+<section class="mt-4">
+  <h2>Joburi similare</h2>
+  <ul class="list cards" role="list">
+    {% for j in jobs %}
+      <li class="card job-card" role="listitem">
+        <div class="card-body">
+          <h3 class="job-title"><a href="{% url 'jobs:detail' slug=j.slug %}">{{ j.title }}</a></h3>
+          <div class="muted">
+            {% if j.company %}{{ j.company.name }} • {% endif %}
+            {% if j.location %}{{ j.location }}{% endif %}
+          </div>
+          <div class="badges">
+            {% if j.work_type %}<span class="badge">{{ j.get_work_type_display|default:j.work_type }}</span>{% endif %}
+            {% if j.employment_type %}<span class="badge">{{ j.get_employment_type_display|default:j.employment_type }}</span>{% endif %}
+          </div>
+          <div class="meta muted">Publicat {% if j.created_at %}acum {{ j.created_at|timesince }}{% else %}recent{% endif %}</div>
+          <div class="actions">
+            <a class="btn btn-light" href="{% url 'jobs:detail' slug=j.slug %}">Vezi detalii</a>
+          </div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
