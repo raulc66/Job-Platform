@@ -1,37 +1,52 @@
 {% extends 'base.html' %}
 {% block title %}{{ job.title }}{% endblock %}
-{% block meta_description %}{{ job.title }} la {% if job.company %}{{ job.company.name }}{% endif %}{% if job.location %}, {{ job.location }}{% endif %}.{% endblock %}
 
 {% block content %}
-<section class="container container--narrow">
-  <div class="hero">
-    <h1 class="title">{{ job.title }}</h1>
-    <p class="muted">{{ job.company.name }} • {{ job.get_city_display }}</p>
-    <div class="pills">
-      <span class="pill">{{ job.get_category_display }}</span>
-      {% if job.salary_min %}<span class="pill">RON {{ job.salary_min }}{% if job.salary_max %}–{{ job.salary_max }}{% endif %}</span>{% endif %}
-      {% if job.expires_at %}<span class="pill">Expires {{ job.expires_at|date:"M j, Y" }}</span>{% endif %}
+<h1>{{ job.title }}</h1>
+<p class="text-muted">
+  {% if job.company %}{{ job.company.name }} • {% endif %}
+  {% if job.location %}{{ job.location }}{% endif %}
+  {% if job.get_employment_type_display %} • {{ job.get_employment_type_display }}{% endif %}
+</p>
+<div class="mt-3">{{ job.description|linebreaks }}</div>
+
+<!-- Similar jobs -->
+{% include "jobs/_similar_jobs.html" with jobs=similar_jobs %}
+
+<!-- Quick Apply modal (shared with A3 behavior) -->
+<div id="quickApplyModal" class="modal" aria-hidden="true" role="dialog" aria-label="Aplică rapid" style="display:none;">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 id="qa-title">Aplică rapid</h3>
+      <button type="button" class="modal-close" data-action="modal-close" aria-label="Închide">×</button>
     </div>
-    <div class="hero__cta">
-      {% if request.user.is_authenticated and request.user.role == 'seeker' %}
-        {% if job %}
-          <a class="btn btn-primary" href="{% url 'applications:apply' slug=job.slug %}">Aplică acum</a>
-        {% elif object %}
-          <a class="btn btn-primary" href="{% url 'applications:apply' slug=object.slug %}">Aplică acum</a>
-        {% endif %}
-      {% else %}
-        <a class="btn btn--sub" href="{% url 'accounts:login' %}">Login to Apply</a>
-      {% endif %}
-      {% if request.user.is_authenticated and request.user.role == 'employer' and request.user == job.company.owner %}
-        <a class="btn" href="{% url 'jobs:create' %}">Post another job</a>
-      {% endif %}
+    <div class="modal-body">
+      <p>Vei aplica pentru: <strong id="qa-job-title"></strong></p>
+      <p class="muted">CV (opțional) și Scrisoare de intenție (opțional) pot fi adăugate ulterior.</p>
+    </div>
+    <div class="modal-footer">
+      <a id="qa-apply-link" class="btn btn-primary" href="#">Continuă</a>
     </div>
   </div>
+</div>
 
-  <article class="prose">
-    {{ job.description|linebreaks }}
-  </article>
-</section>
+<!-- Spacer so the sticky bar doesn't overlap content on mobile -->
+<div class="sticky-apply-spacer" aria-hidden="true"></div>
+
+<!-- Sticky apply bar (mobile) -->
+{% if request.user.is_authenticated and request.user.role == 'seeker' %}
+<nav class="sticky-apply" aria-label="Acțiuni job">
+  <div class="sticky-apply-title" title="{{ job.title }}">{{ job.title }}</div>
+  <button class="btn btn-primary" data-action="quick-apply" data-slug="{{ job.slug }}" data-title="{{ job.title }}">
+    Aplică acum
+  </button>
+</nav>
+{% else %}
+<nav class="sticky-apply" aria-label="Acțiuni job">
+  <div class="sticky-apply-title" title="{{ job.title }}">{{ job.title }}</div>
+  <a class="btn btn-primary" href="{% url 'applications:apply' slug=job.slug %}">Aplică acum</a>
+</nav>
+{% endif %}
 {% endblock %}
 
 {% block extra_scripts %}

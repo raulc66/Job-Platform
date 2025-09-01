@@ -1,0 +1,14 @@
+<div class="profile-progress card">
+  <div class="card-body">
+    <div class="flex between center">
+      <strong>Completare profil</strong>
+      <span class="pill">{{ profile_completion }}%</span>
+    </div>
+    <ul class="checklist">
+      <li class="{% if has_location %}done{% endif %}">Locație</li>
+      <li class="{% if has_skills %}done{% endif %}">Aptitudini</li>
+      <li class="{% if has_cv %}done{% endif %}">CV (opțional)</li>
+      <li class="{% if has_portfolio %}done{% endif %}">Link portofoliu (opțional)</li>
+    </ul>
+  </div>
+</div>

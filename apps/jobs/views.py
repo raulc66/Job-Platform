@@ -18,6 +18,7 @@ import re
 from django.core.mail import send_mail
 from django.conf import settings
 from apps.analytics.utils import log_event
+from django.db.models import Q
 
 PROFANITY_WORDS = {"fuck", "shit", "spam", "escroc", "teapa", "teapă"}
 
@@ -29,7 +30,126 @@ class JobListView(FilterView, ListView):
     filterset_class = JobFilter
 
     def get_queryset(self):
-        return Job.objects.select_related("company").filter(is_active=True)
+        qs = super().get_queryset().select_related("company")
+        params = self.request.GET
+
+        # Field presence checks
+        fields = {f.name for f in Job._meta.get_fields()}
+        has_is_active = "is_active" in fields
+        has_moderation = "moderation_status" in fields
+        has_location = "location" in fields
+        has_city = "city" in fields
+        has_employment_type = "employment_type" in fields
+        has_work_type = "work_type" in fields
+        has_salary_min = "salary_min" in fields
+        has_salary_max = "salary_max" in fields
+
+        # Only public jobs
+        if has_is_active:
+            qs = qs.filter(is_active=True)
+        if has_moderation:
+            qs = qs.filter(moderation_status=getattr(Job, "MOD_APPROVED", "approved"))
+
+        # Search
+        q = (params.get("q") or "").strip()
+        if q:
+            q_filter = Q(title__icontains=q) | Q(description__icontains=q)
+            if "company" in fields:
+                q_filter = q_filter | Q(company__name__icontains=q)
+            qs = qs.filter(q_filter)
+
+        # Location
+        loc = (params.get("loc") or "").strip()
+        if loc:
+            if has_location:
+                qs = qs.filter(location__icontains=loc)
+            elif has_city:
+                qs = qs.filter(city__icontains=loc)
+
+        # Employment type
+        emp = (params.get("employment_type") or "").strip()
+        if emp and has_employment_type:
+            qs = qs.filter(employment_type=emp)
+
+        # Work type (e.g., remote/hybrid/onsite)
+        work = (params.get("work_type") or "").strip()
+        if work and has_work_type:
+            qs = qs.filter(work_type=work)
+
+        # Has salary
+        has_salary = params.get("has_salary")
+        if has_salary in ("1", "true", "on", "yes"):
+            if has_salary_max:
+                qs = qs.filter(salary_max__isnull=False)
+            elif has_salary_min:
+                qs = qs.filter(salary_min__isnull=False)
+
+        # Sorting
+        sort = (params.get("sort") or "new").strip()
+        if sort == "salary":
+            if has_salary_max:
+                qs = qs.order_by("-salary_max", "-id")
+            elif has_salary_min:
+                qs = qs.order_by("-salary_min", "-id")
+            else:
+                qs = qs.order_by("-id")
+        else:
+            qs = qs.order_by("-created_at" if "created_at" in fields else "-id")
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        params = self.request.GET.copy()
+
+        # Build querystring without page for pagination persistence
+        params_without_page = params.copy()
+        params_without_page.pop("page", None)
+        querystring = params_without_page.urlencode()
+
+        # Active filters for chips
+        active_filters = {}
+        if params.get("q"): active_filters["q"] = params.get("q")
+        if params.get("loc"): active_filters["loc"] = params.get("loc")
+        if params.get("employment_type"): active_filters["employment_type"] = params.get("employment_type")
+        if params.get("work_type"): active_filters["work_type"] = params.get("work_type")
+        if params.get("has_salary") in ("1", "true", "on", "yes"): active_filters["has_salary"] = "1"
+        if params.get("sort") and params.get("sort") != "new": active_filters["sort"] = params.get("sort")
+
+        # Remove-links (URL for current list without that param)
+        remove_links = {}
+        for key in active_filters.keys():
+            p = params.copy()
+            p.pop(key, None)
+            p.pop("page", None)
+            remove_links[key] = f"?{p.urlencode()}" if p else "?"
+
+        # Choices for selects (if fields exist with choices)
+        def field_choices(name):
+            try:
+                f = Job._meta.get_field(name)
+                return list(f.choices) if getattr(f, "choices", None) else []
+            except Exception:
+                return []
+
+        ctx.update({
+            "query": params,
+            "querystring": querystring,
+            "active_filters": active_filters,
+            "remove_links": remove_links,
+            "employment_type_choices": field_choices("employment_type"),
+            "work_type_choices": field_choices("work_type"),
+        })
+
+        profile = None
+        quick_apply_ready = False
+        if self.request.user.is_authenticated:
+            try:
+                quick_apply_ready = bool(getattr(self.request.user, "seekerprofile", None) and self.request.user.seekerprofile.quick_apply_ready)
+            except Exception:
+                quick_apply_ready = False
+        ctx["quick_apply_ready"] = quick_apply_ready
+        return ctx
 
 class JobDetailView(DetailView):
     model = Job
@@ -44,6 +164,36 @@ class JobDetailView(DetailView):
         except Exception:
             pass
         return response
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        job = self.object
+        fields = {f.name for f in Job._meta.get_fields()}
+
+        qs = Job.objects.exclude(id=job.id).select_related("company")
+        if "is_active" in fields:
+            qs = qs.filter(is_active=True)
+        if "moderation_status" in fields:
+            qs = qs.filter(moderation_status=getattr(Job, "MOD_APPROVED", "approved"))
+
+        filters = Q()
+        # Heuristic matching by category/city/location/work_type
+        if "category" in fields and getattr(job, "category_id", None):
+            filters |= Q(category_id=job.category_id)
+        if "city" in fields and getattr(job, "city", ""):
+            filters |= Q(city__iexact=job.city)
+        elif "location" in fields and getattr(job, "location", ""):
+            filters |= Q(location__iexact=job.location)
+        if "work_type" in fields and getattr(job, "work_type", ""):
+            filters |= Q(work_type=job.work_type)
+
+        if filters:
+            qs = qs.filter(filters)
+
+        order_field = "-created_at" if "created_at" in fields else "-id"
+        similar_jobs = list(qs.order_by(order_field)[:4])
+        ctx["similar_jobs"] = similar_jobs
+        return ctx
 
 @method_decorator(rate_limit(key="job-create", rate=5, period=60), name="dispatch")  # 5/min per user/IP
 class JobCreateView(EmployerRequiredMixin, CreateView):

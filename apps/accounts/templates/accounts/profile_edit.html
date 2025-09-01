@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Profil candidat{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Profil candidat</h1>
+  {% include "accounts/_profile_progress.html" %}
+  <form method="post" class="form mt-3">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="id_location">Locație</label>
+      {{ form.location }}
+    </div>
+    <div class="form-group">
+      <label for="id_skills">Aptitudini (maxim 3, separate prin virgule)</label>
+      {{ form.skills }}
+    </div>
+    <div class="form-group">
+      <label for="id_portfolio_url">Link portofoliu (opțional)</label>
+      {{ form.portfolio_url }}
+    </div>
+    <button type="submit" class="btn btn-primary">Salvează</button>
+  </form>
+</section>
+{% endblock %}

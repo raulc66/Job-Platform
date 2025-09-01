@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Caută joburi{% endblock %}
+{% block content %}
+<section class="hero container">
+  <h1>Găsește jobul potrivit</h1>
+  <form method="get" action="/" class="hero-search" role="search" aria-label="Căutare joburi">
+    <div class="fields">
+      <input type="text" name="q" placeholder="Rol sau skill (ex: React, Contabil)" value="{{ q }}" aria-label="Rol sau skill">
+      <input type="text" name="loc" placeholder="Locație (ex: București)" value="{{ loc }}" aria-label="Locație">
+      <button type="submit" class="btn btn-primary">Caută</button>
+    </div>
+  </form>
+  <div class="cta-row">
+    <a class="btn btn-ghost" href="{% url 'jobs:create' %}">Postează job</a>
+  </div>
+</section>
+
+{% include "includes/stats_row.html" %}
+{% include "includes/how_it_works.html" %}
+{% endblock %}

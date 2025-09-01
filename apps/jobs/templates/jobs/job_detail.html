@@ -11,11 +11,41 @@
 <div class="mt-3 flex gap">
   {% if request.user.is_authenticated and request.user.role == 'seeker' %}
     <a class="btn btn-primary" href="{% url 'applications:apply' slug=job.slug %}" aria-label="Aplică la {{ job.title }}">Aplică acum</a>
+
+    <form method="post" action="{% url 'jobs:save' slug=job.slug %}" style="display:inline;">
+      {% csrf_token %}
+      <button class="btn btn-ghost" type="submit">Salvează</button>
+    </form>
+
     <form method="post" action="{% url 'jobs:report' slug=job.slug %}" style="display:inline;">
       {% csrf_token %}
       <input type="hidden" name="reason" value="other">
-      <button class="btn btn-ghost" type="submit" aria-label="Raportează jobul {{ job.title }}">Raportează job</button>
+      <button class="btn btn-ghost" type="submit" aria-label="Raportează jobul {{ job.title }}">Raportează</button>
     </form>
   {% endif %}
+</div>
+
+<div id="qa-state" data-qar="{{ quick_apply_ready|yesno:'1,0' }}"></div>
+<div id="qa-onboarding" class="modal" aria-hidden="true" role="dialog" aria-label="Completare rapidă" style="display:none;" data-endpoint="{% url 'accounts:quick_apply_prep' %}">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Înainte să aplici</h3>
+      <button type="button" class="modal-close" data-action="modal-close" aria-label="Închide">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Locație</label>
+        <input type="text" id="qa-loc" class="input" placeholder="ex: București">
+      </div>
+      <div class="form-group">
+        <label>Aptitudini principale (max 3, separate prin virgule)</label>
+        <input type="text" id="qa-skills" class="input" placeholder="ex: React, Python, SQL">
+      </div>
+      <p class="muted">CV și Scrisoare de intenție sunt opționale.</p>
+    </div>
+    <div class="modal-footer">
+      <button id="qa-save-continue" class="btn btn-primary" type="button">Salvează și continuă</button>
+    </div>
+  </div>
 </div>
 {% endblock %}
