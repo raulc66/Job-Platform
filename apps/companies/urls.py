@@ -9,4 +9,5 @@ urlpatterns = [
     path("need-company/", views.need_company, name="need_company"),
     path("applicants/", views.employer_applicants, name="employer_applicants"),
     path("<slug:slug>/", views.company_detail, name="detail"),
+    path("employer/setup/", views.employer_setup, name="employer_setup"),
 ]

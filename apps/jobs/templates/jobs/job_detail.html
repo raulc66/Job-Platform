@@ -1,51 +1,77 @@
 {% extends 'base.html' %}
 {% block title %}{{ job.title }}{% endblock %}
+
 {% block content %}
 <h1>{{ job.title }}</h1>
 <p class="text-muted">
   {% if job.company %}{{ job.company.name }} • {% endif %}
-  {{ job.location }}{% if job.get_employment_type_display %} • {{ job.get_employment_type_display }}{% endif %}
+  {% if job.location %}{{ job.location }}{% endif %}
+  {% if job.get_employment_type_display %} • {{ job.get_employment_type_display }}{% endif %}
 </p>
 <div class="mt-3">{{ job.description|linebreaks }}</div>
 
-<div class="mt-3 flex gap">
-  {% if request.user.is_authenticated and request.user.role == 'seeker' %}
-    <a class="btn btn-primary" href="{% url 'applications:apply' slug=job.slug %}" aria-label="Aplică la {{ job.title }}">Aplică acum</a>
+<!-- Similar jobs -->
+{% include "jobs/_similar_jobs.html" with jobs=similar_jobs %}
 
-    <form method="post" action="{% url 'jobs:save' slug=job.slug %}" style="display:inline;">
-      {% csrf_token %}
-      <button class="btn btn-ghost" type="submit">Salvează</button>
-    </form>
-
-    <form method="post" action="{% url 'jobs:report' slug=job.slug %}" style="display:inline;">
-      {% csrf_token %}
-      <input type="hidden" name="reason" value="other">
-      <button class="btn btn-ghost" type="submit" aria-label="Raportează jobul {{ job.title }}">Raportează</button>
-    </form>
-  {% endif %}
-</div>
-
-<div id="qa-state" data-qar="{{ quick_apply_ready|yesno:'1,0' }}"></div>
-<div id="qa-onboarding" class="modal" aria-hidden="true" role="dialog" aria-label="Completare rapidă" style="display:none;" data-endpoint="{% url 'accounts:quick_apply_prep' %}">
+<!-- Quick Apply modal (shared with A3 behavior) -->
+<div id="quickApplyModal" class="modal" aria-hidden="true" role="dialog" aria-label="Aplică rapid" style="display:none;">
   <div class="modal-dialog">
     <div class="modal-header">
-      <h3>Înainte să aplici</h3>
+      <h3 id="qa-title">Aplică rapid</h3>
       <button type="button" class="modal-close" data-action="modal-close" aria-label="Închide">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Locație</label>
-        <input type="text" id="qa-loc" class="input" placeholder="ex: București">
-      </div>
-      <div class="form-group">
-        <label>Aptitudini principale (max 3, separate prin virgule)</label>
-        <input type="text" id="qa-skills" class="input" placeholder="ex: React, Python, SQL">
-      </div>
-      <p class="muted">CV și Scrisoare de intenție sunt opționale.</p>
+      <p>Vei aplica pentru: <strong id="qa-job-title"></strong></p>
+      <p class="muted">CV (opțional) și Scrisoare de intenție (opțional) pot fi adăugate ulterior.</p>
     </div>
     <div class="modal-footer">
-      <button id="qa-save-continue" class="btn btn-primary" type="button">Salvează și continuă</button>
+      <a id="qa-apply-link" class="btn btn-primary" href="#">Continuă</a>
     </div>
   </div>
 </div>
+
+<!-- Spacer so the sticky bar doesn't overlap content on mobile -->
+<div class="sticky-apply-spacer" aria-hidden="true"></div>
+
+<!-- Sticky apply bar (mobile) -->
+{% if request.user.is_authenticated and request.user.role == 'seeker' %}
+<nav class="sticky-apply" aria-label="Acțiuni job">
+  <div class="sticky-apply-title" title="{{ job.title }}">{{ job.title }}</div>
+  <button class="btn btn-primary" data-action="quick-apply" data-slug="{{ job.slug }}" data-title="{{ job.title }}">
+    Aplică acum
+  </button>
+</nav>
+{% else %}
+<nav class="sticky-apply" aria-label="Acțiuni job">
+  <div class="sticky-apply-title" title="{{ job.title }}">{{ job.title }}</div>
+  <a class="btn btn-primary" href="{% url 'applications:apply' slug=job.slug %}">Aplică acum</a>
+</nav>
+{% endif %}
+
+{% if user.is_authenticated %}
+  <p class="mt-2">
+    <a class="btn btn-primary" href="{% url 'applications:apply' slug=job.slug %}">Aplică acum</a>
+  </p>
+{% else %}
+  <p class="mt-2">
+    <a class="btn" href="{% url 'accounts:login' %}?next={% url 'jobs:detail' slug=job.slug %}">Autentifică-te pentru a aplica</a>
+  </p>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@type": "JobPosting",
+    "title": "{{ job.title|escapejs }}",
+    {% if job.company %}"hiringOrganization": {"@type": "Organization", "name": "{{ job.company.name|escapejs }}"},{% endif %}
+    {% if job.created_at %}"datePosted": "{{ job.created_at|date:'c' }}",{% endif %}
+    {% if job.location %}"jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": "{{ job.location|escapejs }}""}},{% endif %}
+    {% if job.employment_type %}"employmentType": "{{ job.employment_type|escapejs }}",{% endif %}
+    {% if job.valid_through %}"validThrough": "{{ job.valid_through|date:'c' }}",{% endif %}
+    "description": "{{ job.description|striptags|truncatechars:300|escapejs }}"
+  }
+  </script>
 {% endblock %}

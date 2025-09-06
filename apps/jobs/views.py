@@ -3,9 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, DetailView, CreateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django_filters.views import FilterView
-from apps.accounts.decorators import EmployerRequiredMixin, role_required
+from apps.accounts.decorators import employer_required, EmployerRequiredMixin, role_required
 from apps.companies.models import Company
 from .forms import JobForm
 from .models import Job, SavedJob, JobReport
@@ -19,6 +19,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from apps.analytics.utils import log_event
 from django.db.models import Q
+from apps.applications.models import Application
 
 PROFANITY_WORDS = {"fuck", "shit", "spam", "escroc", "teapa", "teapă"}
 
@@ -193,6 +194,12 @@ class JobDetailView(DetailView):
         order_field = "-created_at" if "created_at" in fields else "-id"
         similar_jobs = list(qs.order_by(order_field)[:4])
         ctx["similar_jobs"] = similar_jobs
+
+        # Check if the user has applied to this job
+        ctx["has_applied"] = False
+        if self.request.user.is_authenticated:
+            ctx["has_applied"] = Application.objects.filter(job=job, seeker=self.request.user).exists()
+
         return ctx
 
 @method_decorator(rate_limit(key="job-create", rate=5, period=60), name="dispatch")  # 5/min per user/IP
@@ -202,10 +209,7 @@ class JobCreateView(EmployerRequiredMixin, CreateView):
     template_name = "jobs/job_form.html"
 
     def dispatch(self, request, *args, **kwargs):
-        # Require at least one company owned by the employer
-        if not Company.objects.filter(owner=request.user).exists():
-            messages.warning(request, "Trebuie să adaugi o companie înainte de a posta un job.")
-            return redirect("companies:need_company")
+        # EmployerRequiredMixin already enforces: authenticated employer + linked company
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -278,9 +282,8 @@ class JobCreateView(EmployerRequiredMixin, CreateView):
             pass
         return form
 
-@login_required
-@role_required("employer")
-def job_create(request):
+@employer_required  # requires employer + linked company
+def create_job(request, *args, **kwargs):
     # Employer must have at least one company
     if not Company.objects.filter(owner=request.user).exists():
         messages.warning(request, "Trebuie să adaugi o companie înainte de a posta un job.")
@@ -304,9 +307,9 @@ def job_create(request):
 
     return render(request, "jobs/job_form.html", {"form": form})
 
-@login_required
-@role_required("employer")
-def job_update(request, slug):
+@employer_required  # requires employer + linked company
+def update_job(request, *args, **kwargs):
+    slug = kwargs.get("slug")
     job = get_object_or_404(Job, slug=slug)
     # Only the employer owning the job's company can edit
     if job.company.owner_id != request.user.id:
@@ -371,7 +374,16 @@ def job_detail(request, slug):
         job = get_object_or_404(qs, slug=slug, is_active=True)
     else:
         job = get_object_or_404(qs, slug=slug)
-    return render(request, "jobs/job_detail.html", {"job": job})
+
+    has_applied = False
+    if request.user.is_authenticated:
+        has_applied = Application.objects.filter(job=job, seeker=request.user).exists()
+
+    context = {
+        "job": job,
+        "has_applied": has_applied,
+    }
+    return render(request, "jobs/job_detail.html", context)
 
 @login_required
 @role_required("seeker")
@@ -409,3 +421,42 @@ def report_job(request, slug):
         messages.success(request, "Mulțumim pentru raportare. Echipa va verifica anunțul.")
         return redirect("jobs:detail", slug=slug)
     return redirect("jobs:detail", slug=slug)
+
+class JobUpdateView(EmployerRequiredMixin, UpdateView):
+    model = Job
+    form_class = JobForm
+    template_name = "jobs/job_form.html"
+    slug_field = "slug"
+    slug_url_kwarg = "slug"
+
+    def dispatch(self, request, *args, **kwargs):
+        # EmployerRequiredMixin already enforces: authenticated employer + linked company
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        # Only allow editing jobs for companies owned by the current user
+        return Job.objects.filter(company__owner=self.request.user)
+
+    def form_valid(self, form):
+        job = form.save(commit=False)
+        if job.company.owner_id != self.request.user.id:
+            return HttpResponseForbidden("Nu ai permisiunea de a edita pentru această companie.")
+        job.save()
+        messages.success(self.request, "Jobul a fost actualizat.")
+        return redirect("jobs:detail", slug=job.slug)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        try:
+            form.fields["company"].queryset = Company.objects.filter(owner=self.request.user)
+        except Exception:
+            pass
+        return form
+
+@employer_required  # ensures authenticated employer with linked company
+def job_update(request, *args, **kwargs):
+    """
+    Wrapper to keep FBV-style URL working while using the CBV internally.
+    Accepts whatever kwargs your URL provides (slug or pk).
+    """
+    return JobUpdateView.as_view()(request, *args, **kwargs)

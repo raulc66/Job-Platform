@@ -1,12 +1,23 @@
-{% extends 'base.html' %}
-{% block title %}Login{% endblock %}
+{% extends "base.html" %}
+{% block title %}Autentificare{% endblock %}
 {% block content %}
-<section class="container container--narrow">
-  <h2>Login</h2>
-  <form method="post" class="form">
+<section class="container">
+  <h1>Autentificare</h1>
+  <form method="post" class="stack mt-2">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button class="btn btn--sub" type="submit">Login</button>
+    <input type="hidden" name="next" value="{{ next|default:'' }}">
+    {{ form.non_field_errors }}
+    <div>
+      <label>Utilizator</label>
+      {{ form.username }}
+      {% if form.username.errors %}<div class="error">{{ form.username.errors }}</div>{% endif %}
+    </div>
+    <div>
+      <label>Parolă</label>
+      {{ form.password }}
+      {% if form.password.errors %}<div class="error">{{ form.password.errors }}</div>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">Intră</button>
   </form>
 </section>
 {% endblock %}

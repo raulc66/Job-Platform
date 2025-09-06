@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Înregistrare{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Înregistrare</h1>
+  <form method="post" class="stack mt-2">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label>Utilizator {{ form.username }}</label>
+    <label>Parolă {{ form.password1 }}</label>
+    <label>Confirmă parola {{ form.password2 }}</label>
+    <button type="submit" class="btn btn-primary">Creează cont</button>
+  </form>
+</section>
+{% endblock %}

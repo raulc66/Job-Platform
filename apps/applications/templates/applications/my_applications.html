@@ -1,35 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Aplicațiile mele{% endblock %}
+
 {% block content %}
 <section class="container">
   <h1>Aplicațiile mele</h1>
-  {% if applications %}
-    <ul class="list">
-      {% for a in applications %}
-        <li>
-          <a href="{% url 'jobs:detail' slug=a.job.slug %}">{{ a.job.title }}</a>
-          {% if a.status %}<span class="pill">{{ a.status }}</span>{% endif %}
-          <div class="muted">{% if a.job.company %}{{ a.job.company.name }}{% endif %}</div>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>Nu ai aplicat încă.</p>
-  {% endif %}
 
-  <hr />
-  <h2 id="saved">Joburi salvate</h2>
-  {% if saved_jobs %}
-    <ul class="list">
-      {% for s in saved_jobs %}
-        <li>
-          <a href="{% url 'jobs:detail' slug=s.job.slug %}">{{ s.job.title }}</a>
-          <span class="muted">{% if s.job.company %}{{ s.job.company.name }}{% endif %}</span>
-        </li>
-      {% endfor %}
-    </ul>
+  {% if applications %}
+    <table class="table mt-2">
+      <thead>
+        <tr>
+          <th>Job</th>
+          <th>Companie</th>
+          <th>Trimis</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in applications %}
+          <tr>
+            <td>
+              {% if a.job %}
+                <a href="{% url 'jobs:detail' slug=a.job.slug %}">{{ a.job.title }}</a>
+              {% else %}-{% endif %}
+            </td>
+            <td>{{ a.job.company.name }}</td>
+            <td>{{ a.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ a.get_status_display|default:a.status }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   {% else %}
-    <p>Nu ai joburi salvate.</p>
+    <p class="muted">Nu ai încă aplicații.</p>
   {% endif %}
 </section>
 {% endblock %}

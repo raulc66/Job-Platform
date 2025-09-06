@@ -1,0 +1,39 @@
+/* Make form controls readable regardless of theme overrides */
+input,
+select,
+textarea,
+.uk-input,
+.uk-select,
+.uk-textarea {
+  color: #111 !important;             /* dark text */
+  background: #fff !important;        /* white bg */
+  border-color: #d1d5db !important;   /* gray-300 */
+}
+
+/* Placeholder color */
+input::placeholder,
+textarea::placeholder,
+.uk-input::placeholder,
+.uk-textarea::placeholder {
+  color: #6b7280 !important;          /* gray-500 */
+  opacity: 1 !important;
+}
+
+/* Focus outline for accessibility */
+input:focus,
+select:focus,
+textarea:focus,
+.uk-input:focus,
+.uk-select:focus,
+.uk-textarea:focus {
+  outline: none !important;
+  border-color: #2563eb !important;   /* blue-600 */
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Ensure buttons/links in nav don’t stack awkwardly */
+.site-header .top-nav .btn { margin-left: .5rem; }
+.site-header .top-nav .spacer { flex: 1; }
+.site-header .top-nav { display: flex; align-items: center; gap: .5rem; }
+.nav-container { display: flex; align-items: center; gap: 1rem; }
+.brand { font-weight: 700; }

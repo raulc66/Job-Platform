@@ -1,42 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Aplică – {{ job.title }}{% endblock %}
+{% load static %}
+{% block title %}Aplică — {{ job.title }}{% endblock %}
+
 {% block content %}
-<section class="container narrow">
+<section class="container">
   <h1>Aplică la: {{ job.title }}</h1>
-  <form method="post" enctype="multipart/form-data" class="form-card">
+  <p class="muted">{{ job.company.name }}</p>
+
+  <form method="post" enctype="multipart/form-data" class="stack mt-2">
     {% csrf_token %}
-    <div class="form-group">
-      <label for="{{ form.cover_letter.id_for_label }}">{{ form.cover_letter.label }}</label>
+    <div>
+      <label for="{{ form.cover_letter.id_for_label }}">Scrisoare de intenție</label>
       {{ form.cover_letter }}
-      {% if form.cover_letter.help_text %}<small class="muted">{{ form.cover_letter.help_text }}</small>{% endif %}
-      {% for e in form.cover_letter.errors %}<div class="error">{{ e }}</div>{% endfor %}
+      {% if form.cover_letter.errors %}<div class="error">{{ form.cover_letter.errors }}</div>{% endif %}
     </div>
-    <div class="form-group">
-      <label for="{{ form.cv.id_for_label }}">{{ form.cv.label }}</label>
+    <div>
+      <label for="{{ form.cv.id_for_label }}">CV</label>
       {{ form.cv }}
-      {% if form.cv.help_text %}<small class="muted">{{ form.cv.help_text }}</small>{% endif %}
-      {% for e in form.cv.errors %}<div class="error">{{ e }}</div>{% endfor %}
+      <small class="muted">PDF / DOC / DOCX, maxim 4MB</small>
+      {% if form.cv.errors %}<div class="error">{{ form.cv.errors }}</div>{% endif %}
     </div>
-
-    {% if questions %}
-      <hr />
-      <h3>Întrebări de screening</h3>
-      {% for q in questions %}
-        <div class="form-group">
-          <label>{{ q.text }} {% if q.required %}<span class="muted">(obligatoriu)</span>{% endif %}</label>
-          {% if q.type == "yes_no" %}
-            <label class="checkbox"><input type="checkbox" name="q_{{ q.id }}"> Da</label>
-          {% elif q.type == "number" %}
-            <input type="number" name="q_{{ q.id }}" class="input">
-          {% else %}
-            <input type="text" name="q_{{ q.id }}" class="input">
-          {% endif %}
-        </div>
-      {% endfor %}
-    {% endif %}
-
     <button type="submit" class="btn btn-primary">Trimite aplicația</button>
-    <a href="{% url 'jobs:detail' slug=job.slug %}" class="btn btn-ghost">Înapoi</a>
+    <a class="btn btn-ghost" href="{% url 'jobs:detail' slug=job.slug %}">Înapoi la job</a>
   </form>
 </section>
 {% endblock %}

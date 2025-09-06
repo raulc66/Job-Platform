@@ -1,17 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Form</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-</head>
-<body>
-    <h1>Submit a Job</h1>
-    <form method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Submit</button>
-    </form>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Post a Job{% endblock %}
+{% block content %}
+<section class="container container--narrow">
+  <h2>Post a new Job</h2>
+  <form method="post" class="form form--themed">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn btn--sub" type="submit">Save</button>
+  </form>
+</section>
+{% endblock %}

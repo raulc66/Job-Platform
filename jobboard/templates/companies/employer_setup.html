@@ -1,0 +1,18 @@
+
+{% extends "base.html" %}
+{% block title %}Creează sau leagă compania{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Creează sau leagă compania</h1>
+  <p>Pentru a posta joburi, contul tău de angajator trebuie să fie asociat cu o companie.</p>
+  <ol>
+    <li>Creează o companie nouă sau caută compania ta existentă.</li>
+    <li>Leagă-ți contul de angajator de acea companie.</li>
+  </ol>
+  <p class="mt-2">
+    <!-- Replace with your real routes/actions -->
+    <a class="btn btn-primary" href="{% url 'companies:list' %}">Caută companii</a>
+    <a class="btn btn-ghost" href="{% url 'companies:create' %}">Creează companie</a>
+  </p>
+</section>
+{% endblock %}

@@ -82,6 +82,46 @@ async function submitOnboarding() {
   return false;
 }
 
+// CSRF helper (idempotent)
+function __getCSRF() {
+  const m = document.cookie.match(/(^| )csrftoken=([^;]+)/);
+  return m ? decodeURIComponent(m[2]) : '';
+}
+const getCSRF = typeof getCSRF === 'function' ? getCSRF : __getCSRF;
+
+// Replace inbox-root with fetched content (progressive enhancement)
+async function swapInboxWith(url) {
+  const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  if (!res.ok) throw new Error('Fetch failed');
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const newRoot = doc.getElementById('inbox-root');
+  const curRoot = document.getElementById('inbox-root');
+  if (newRoot && curRoot) {
+    curRoot.replaceWith(newRoot);
+    history.replaceState(null, '', url);
+  }
+}
+
+// Tabs without reload
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a.tab[data-ajax="tab"]');
+  if (!a || !document.getElementById('inbox-root')) return;
+  e.preventDefault();
+  swapInboxWith(a.href).catch(() => location.assign(a.href));
+});
+
+// Job filter without reload
+document.addEventListener('change', (e) => {
+  const sel = e.target.closest('#filter-job');
+  if (!sel || !document.getElementById('inbox-root')) return;
+  const url = new URL(location.href);
+  if (sel.value) url.searchParams.set('job', sel.value);
+  else url.searchParams.delete('job');
+  url.searchParams.delete('page');
+  swapInboxWith(url.toString()).catch(() => location.assign(url.toString()));
+});
+
 // Events
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action]');

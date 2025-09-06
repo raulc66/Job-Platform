@@ -31,3 +31,6 @@ def send_saved_jobs_digest(frequency="daily"):
             )
         except Exception:
             pass
+
+def notify_saved_jobs():
+    qs = User.objects.filter(saved_jobs__isnull=False).distinct()

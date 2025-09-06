@@ -5,4 +5,7 @@ media/
 static_cdn/
 __pycache__/
 .pytest_cache/
+*.pyc.venv/
 *.pyc
+db.sqlite3.bak
+.DS_Store
