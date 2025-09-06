@@ -39,8 +39,9 @@ WSGI_APPLICATION = "jobboard.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        # Correct templates folder (contains home.html)
-        "DIRS": [BASE_DIR / "jobboard" / "templates"],
+        "DIRS": [
+            BASE_DIR / "templates",  # canonical location
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

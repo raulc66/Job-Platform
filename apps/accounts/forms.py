@@ -12,16 +12,16 @@ class LoginForm(AuthenticationForm):
 
 
 class SignupForm(UserCreationForm):
-    email = forms.EmailField(required=False)
+    email = forms.EmailField(required=True)
 
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ("username", "email")
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
-        if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("An account with this email already exists.")
+        email = self.cleaned_data.get("email")
+        if email and User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Acest email este deja folosit.")
         return email
 
     def save(self, commit=True):
@@ -45,3 +45,10 @@ class SeekerProfileForm(forms.ModelForm):
             "skills": "Aptitudini (maxim 3 recomandat, separate prin virgule)",
             "portfolio_url": "Link portofoliu (opțional)",
         }
+
+
+# If there is a ModelForm targeting User, ensure:
+# class SomeUserForm(forms.ModelForm):
+#     class Meta:
+#         model = get_user_model()
+#         fields = [...]

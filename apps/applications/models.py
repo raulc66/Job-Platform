@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db import models
-from apps.jobs.models import Job
 
 
 class Application(models.Model):
@@ -12,8 +11,18 @@ class Application(models.Model):
         ("rejected", "Respinsă"),
     ]
 
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applications", verbose_name="Job")
-    seeker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="applications", verbose_name="Candidat")
+    job = models.ForeignKey(
+        "jobs.Job",  # lazy reference, avoids NameError
+        on_delete=models.CASCADE,
+        related_name="applications",
+        verbose_name="Job",
+    )
+    seeker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="applications",
+        verbose_name="Candidat",
+    )
     cover_letter = models.TextField(blank=True, null=True, verbose_name="Scrisoare de intenție")
     cv = models.FileField(upload_to="cvs/%Y/%m/", blank=True, null=True, verbose_name="CV")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="submitted", verbose_name="Stare")
@@ -27,6 +36,15 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.seeker} → {self.job}"
+
+    # Legacy aliases for templates (do not use in ORM filters)
+    @property
+    def user(self):
+        return self.seeker
+
+    @property
+    def user_id(self):
+        return self.seeker_id
 
 
 class ApplicationAnswer(models.Model):

@@ -1,22 +1,56 @@
-{% load static %}{% url 'account_logout' as logout_url %}{% url 'account_login' as login_url %}{% url 'account_signup' as signup_url %}
+{% load static %}
 
 <header class="site-header">
-  <div class="nav-container">
-    <a class="brand" href="{% url 'home' %}">JobBoard</a>
-    <nav class="top-nav" aria-label="Principal">
-      {% if request.user.is_authenticated %}
-        {% if request.user.role == 'employer' %}
-          <a href="{% url 'jobs:create' %}">Postează job</a>
-          <a href="{% url 'companies:employer_applicants' %}">Candidați</a>
-        {% elif request.user.role == 'seeker' %}
+  <div class="nav-container" style="display:flex;align-items:center;gap:1rem;">
+    <a class="brand" href="{% url 'home' %}" style="font-weight:700;">JobBoard</a>
+    <nav class="top-nav" aria-label="Meniu principal" style="display:flex;align-items:center;gap:.5rem;flex:1;">
+      <a href="{% url 'home' %}">Acasă</a>
+      <a href="{% url 'jobs:list' %}">Joburi</a>
+      <span style="flex:1"></span>
+
+      {% if user.is_authenticated %}
+        {% if user.role == 'employer' %}
+          <a href="{% url 'applications:inbox' %}">Inbox candidați</a>
+        {% else %}
           <a href="{% url 'applications:mine' %}">Aplicațiile mele</a>
-          <a href="{% url 'applications:mine' %}#saved">Salvate</a>
         {% endif %}
-        {% if logout_url %}<a href="{{ logout_url }}">Logout</a>{% endif %}
+        <span class="muted">Salut, {{ user.get_username }}</span>
+        <a class="btn" href="{% url 'accounts:logout' %}">Logout</a>
       {% else %}
-        <a href="{{ login_url|default:'#' }}">Login</a>
-        <a href="{{ signup_url|default:'#' }}">Înregistrare</a>
+        <a class="btn" href="{% url 'accounts:login' %}">Login</a>
+        <a class="btn btn-primary" href="{% url 'accounts:register' %}">Înregistrare</a>
       {% endif %}
     </nav>
   </div>
 </header>
+
+{% comment %}
+signals.py
+
+from django.contrib.auth import get_user_model
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+User = get_user_model()
+
+@receiver(post_save, sender=User)
+def create_profiles_on_signup(sender, instance, created, **kwargs):
+    if not created:
+        return
+    # Import lazily to avoid circular imports
+    try:
+        from apps.accounts.models import EmployerProfile, SeekerProfile
+    except Exception:
+        return
+    # Create related profiles if they don't exist
+    if not hasattr(instance, "employerprofile"):
+        try:
+            EmployerProfile.objects.get_or_create(user=instance)
+        except Exception:
+            pass
+    if not hasattr(instance, "seekerprofile"):
+        try:
+            SeekerProfile.objects.get_or_create(user=instance)
+        except Exception:
+            pass
+{% endcomment %}

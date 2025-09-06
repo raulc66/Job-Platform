@@ -1,0 +1,16 @@
+<article class="job-card">
+  <h3 class="job-card__title"><a href="{{ job.get_absolute_url }}">{{ job.title }}</a></h3>
+  <div class="job-card__meta">
+    <span class="job-card__company">{{ job.company.name }}</span>
+    {% if job.city %}<span class="job-card__city">{{ job.city }}</span>{% endif %}
+    {% if job.location and not job.city %}<span class="job-card__loc">{{ job.location }}</span>{% endif %}
+    {% if job.salary_min or job.salary_max %}
+      <span class="job-card__salary">
+        {% if job.salary_min %}{{ job.salary_min }}{% endif %}
+        {% if job.salary_max %}-{{ job.salary_max }}{% endif %}
+      </span>
+    {% endif %}
+  </div>
+  <p class="job-card__desc">{{ job.description|striptags|truncatechars:160 }}</p>
+  <a class="btn btn-primary" href="{{ job.get_absolute_url }}">Detalii</a>
+</article>

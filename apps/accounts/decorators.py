@@ -1,8 +1,11 @@
 from functools import wraps
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.urls import reverse
 import time
 
 
@@ -54,3 +57,56 @@ def rate_limit(key="rl", rate=5, period=60):
             return view_func(request, *args, **kwargs)
         return _wrapped
     return decorator
+
+
+def _has_company(user):
+    prof = getattr(user, "employerprofile", None)
+    return bool(getattr(prof, "company", None))
+
+
+def _is_employer(user):
+    # Be tolerant to different schemas: role or boolean flag
+    role = getattr(user, "role", None)
+    return role == "employer" or bool(getattr(user, "is_employer", False))
+
+
+def employer_required(view=None, *, require_company=True):
+    """
+    Function-view guard: requires authenticated employer, and optionally a linked company.
+    Redirects to companies:employer_setup if company missing.
+    """
+    def decorator(func):
+        @wraps(func)
+        def _wrapped(request, *args, **kwargs):
+            u = request.user
+            if not u.is_authenticated:
+                login_url = reverse("accounts:login")
+                return redirect(f"{login_url}?next={request.get_full_path()}")
+            if not _is_employer(u):
+                messages.error(request, "Trebuie să fii angajator pentru a accesa această pagină.")
+                return redirect("home")
+            if require_company and not _has_company(u):
+                messages.info(request, "Asociază o companie înainte de a publica sau edita joburi.")
+                return redirect("companies:employer_setup")
+            return func(request, *args, **kwargs)
+        return _wrapped
+    return decorator if view is None else decorator(view)
+
+
+class EmployerRequiredMixin:
+    """
+    Class-based view mixin for Job create/update; set require_company=False if needed.
+    """
+    require_company = True
+    def dispatch(self, request, *args, **kwargs):
+        u = request.user
+        if not u.is_authenticated:
+            login_url = reverse("accounts:login")
+            return redirect(f"{login_url}?next={request.get_full_path()}")
+        if not _is_employer(u):
+            messages.error(request, "Trebuie să fii angajator pentru a accesa această pagină.")
+            return redirect("home")
+        if self.require_company and not _has_company(u):
+            messages.info(request, "Asociază o companie înainte de a publica sau edita joburi.")
+            return redirect("companies:employer_setup")
+        return super().dispatch(request, *args, **kwargs)

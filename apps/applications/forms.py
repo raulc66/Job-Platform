@@ -1,52 +1,40 @@
 from django import forms
-from .models import Application
 
-class ApplicationForm(forms.ModelForm):
-    class Meta:
-        model = Application
-        fields = ["cover_letter", "cv"]
-        labels = {
-            "cover_letter": "Scrisoare de intenție (opțional)",
-            "cv": "CV (PDF sau DOCX, opțional)",
-        }
-        widgets = {
-            "cover_letter": forms.Textarea(attrs={"rows": 6, "placeholder": "Scrie un mesaj (opțional)"}),
-            "cv": forms.ClearableFileInput(attrs={"accept": ".pdf,.docx"}),
-        }
-        help_texts = {
-            "cv": "Formate acceptate: PDF, DOCX. Dimensiune maximă: 4 MB. CV-ul și scrisoarea sunt opționale.",
-            "cover_letter": "Opțional. Poți lăsa gol.",
-        }
+class ApplicationForm(forms.Form):
+    cover_letter = forms.CharField(
+        label="Scrisoare de intenție",
+        widget=forms.Textarea(attrs={"rows": 6, "placeholder": "Optional"}),
+        required=False,
+        max_length=10000,
+    )
+    cv = forms.FileField(label="CV (PDF/DOC/DOCX, max 4MB)", required=False)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["cover_letter"].required = False
-        self.fields["cv"].required = False
+    MAX_SIZE = 4 * 1024 * 1024
+    ALLOWED_CONTENT_TYPES = {
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }
+    ALLOWED_EXTS = {"pdf", "doc", "docx"}
 
     def clean_cv(self):
-        cv = self.cleaned_data.get("cv")
-        if not cv:
-            return None
+        f = self.cleaned_data.get("cv")
+        if not f:
+            return f
 
-        # Accept only PDF and DOCX
-        allowed_mimes = {
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        }
-        # Fallback by extension if content_type missing or unreliable
-        name_lower = getattr(cv, "name", "").lower()
-        ok_ext = name_lower.endswith(".pdf") or name_lower.endswith(".docx")
-        content_type = getattr(cv, "content_type", None)
+        # Size
+        if f.size and f.size > self.MAX_SIZE:
+            raise forms.ValidationError("Fișierul este prea mare (maxim 4MB).")
 
-        if content_type:
-            if content_type not in allowed_mimes:
-                raise forms.ValidationError("Tip fișier neacceptat. Încarcă un PDF sau DOCX.")
-        elif not ok_ext:
-            raise forms.ValidationError("Tip fișier neacceptat. Încarcă un PDF sau DOCX.")
+        # Content type
+        ctype = getattr(f, "content_type", None)
+        if ctype and ctype not in self.ALLOWED_CONTENT_TYPES:
+            raise forms.ValidationError("Tip de fișier neacceptat. Folosește PDF/DOC/DOCX.")
 
-        # Max 4 MB
-        max_mb = 4
-        if cv.size and cv.size > max_mb * 1024 * 1024:
-            raise forms.ValidationError(f"Fișierul este prea mare. Dimensiunea maximă este {max_mb} MB.")
+        # Extension fallback
+        name = getattr(f, "name", "") or ""
+        ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+        if ext and ext not in self.ALLOWED_EXTS:
+            raise forms.ValidationError("Extensie neacceptată. Folosește PDF/DOC/DOCX.")
 
-        return cv
+        return f

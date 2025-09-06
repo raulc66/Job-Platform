@@ -76,3 +76,10 @@ def employer_applicants(request):
             return redirect("companies:employer_applicants")
 
     return render(request, "companies/employer_applicants.html", {"applications": apps_qs})
+
+
+def employer_setup(request):
+    """
+    Simple helper page telling employers how to create/link a company.
+    """
+    return render(request, "companies/employer_setup.html")

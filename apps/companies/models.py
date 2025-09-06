@@ -5,7 +5,7 @@ from django.utils.text import slugify
 
 
 class Company(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="companies", on_delete=models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="companies")
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     website = models.URLField(blank=True)

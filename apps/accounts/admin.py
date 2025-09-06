@@ -1,14 +1,10 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from .models import User, UserProfile
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 @admin.register(User)
-class UserAdmin(DjangoUserAdmin):
-    fieldsets = DjangoUserAdmin.fieldsets + (("Jobboard", {"fields": ("role", "phone")}),)
-    list_display = ("username", "email", "role", "is_staff", "is_active")
-
-
-@admin.register(UserProfile)
-class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "city", "phone", "receive_alerts", "updated_at")
+class UserAdmin(admin.ModelAdmin):
+    list_display = ("id", "username", "email", "is_active", "is_staff")
+    search_fields = ("username", "email")

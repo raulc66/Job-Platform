@@ -1,0 +1,18 @@
+<tr data-app-id="{{ a.id }}">
+  <td>{% if a.job %}<a href="{% url 'jobs:detail' slug=a.job.slug %}">{{ a.job.title }}</a>{% else %}-{% endif %}</td>
+  <td>
+    {% if a.user %}
+      {{ a.user.username }}{% if a.user.email %} • {{ a.user.email }}{% endif %}
+    {% else %}-{% endif %}
+  </td>
+  <td>{{ a.created_at|date:"Y-m-d H:i" }}</td>
+  <td><span class="pill">{{ a.get_status_display|default:a.status }}</span></td>
+  <td>
+    <select class="status-select" data-action="status-change"
+            data-url="{% url 'applications:status_update' pk=a.pk %}">
+      {% for code,label in status_choices %}
+        <option value="{{ code }}" {% if a.status == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </td>
+</tr>
