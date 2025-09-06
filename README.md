@@ -1,4 +1,4 @@
-# Job Board Project
+# Job Board Project --> Halted
 
 This is a Django-based job board application that allows users to browse job listings, apply for jobs, and manage their accounts. The project is structured to facilitate development and deployment, with separate configurations for development and production environments.
 
